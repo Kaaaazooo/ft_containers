@@ -95,9 +95,28 @@ namespace ft
 
 				size_type size() const	{ return finish - start; }
 
-				//size_type max_size() const;
+				size_type max_size() const { return allocator.max_size(); }
 
-				//void resize (size_type n, value_type val = value_type());
+				void resize (size_type n, value_type val = value_type())
+				{
+					if (n > capacity())
+						reallocate(n);
+					if (n < size())
+					{
+						while (n < size())
+						{
+							allocator.destroy(--finish);
+						}
+					}
+					else
+					{
+						while (n > size())
+						{
+							push_back(val);
+							++n;
+						}
+					}
+				}
 
 				size_type capacity() const { return end_of_storage - start; }
 
@@ -132,8 +151,13 @@ namespace ft
 						typename ft::enable_if<!ft::is_integral<InputIterator>::value,
 							InputIterator>::type* = NULL)
 					{
-						for (size_type i = 0; first + i != last; i++)
+						size_type new_size = last - first;
+						size_type i;
+						for (i = 0; first + i != last; i++)
 							insert(begin() + i, *(first + i));
+						while (i < size())
+							allocator.destroy(start + i++);
+						finish = start + new_size;
 					}
 
 				void assign (size_type n, const T& val)
@@ -145,6 +169,9 @@ namespace ft
 						allocator.destroy(start + i);
 						allocator.construct(start + i, val);
 					}
+					finish = start + n;
+					while (n < size())
+						allocator.destroy(start + n++);
 				}
 
 				void push_back (const value_type& val)
@@ -159,17 +186,12 @@ namespace ft
 				iterator insert (iterator position, const value_type& val)
 				{
 					size_type pos = position - begin();
-					std::cout << "position =\t\t" << position.base() << std::endl;
-					std::cout << "insert begin() =\t" << begin().base() << std::endl;
-					std::cout << "pos = " << pos << std::endl;
 					if (position == end())
 					{
-						std::cout << "IF" << std::endl;
 						push_back(val);
 					}
 					else if (pos < size())
 					{
-						std::cout << "ELSE IF" << std::endl;
 						if (finish == end_of_storage)
 							this->reallocate(size() ? size() * 2 : 1);
 						allocator.construct(finish, *(finish - 1));
@@ -182,19 +204,15 @@ namespace ft
 						start[pos] = val;
 						++finish;
 					}
-					else
-						std::cout << "ELSE" << std::endl;
-					std::cout << std::endl;
 					return (start + pos);
 				}
 
 				void insert (iterator position, size_type n, const value_type& val)
 				{
-					std::cout << "begin =\t\t\t" << this->begin().base() << std::endl;
 					for (size_t i = 0; i < n; i++)
 					{
-						std::cout << "position + " << i << " =\t\t" << position.base() + i << std::endl;
-						insert(position + i, val);
+						position = insert(position, val);
+						++position;
 					}
 				}
 
@@ -204,8 +222,17 @@ namespace ft
 					 	InputIterator>::type* = NULL)
 					{
 						while (first != last)
-							insert(position++, *first++);
+						{
+							position = insert(position, *first++);
+							++position;
+						}
 					}
+				void clear()
+				{
+					for (size_type i = 0; i < size(); i ++)
+						allocator.destroy(start + i);
+					finish = start;
+				}
 
 			protected:
 				void reallocate(size_type new_capacity)
