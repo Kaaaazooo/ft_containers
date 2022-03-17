@@ -3,6 +3,30 @@
 
 namespace ft
 {
+	// Compare
+
+	template <class InputIterator1, class InputIterator2>
+		bool equal ( InputIterator1 first1, InputIterator1 last1, InputIterator2 first2 )
+		{
+			while (first1!=last1) {
+				if (!(*first1 == *first2))   // or: if (!pred(*first1,*first2)), for version 2
+					return false;
+				++first1; ++first2;
+			}
+			return true;
+		}
+
+	template <class InputIterator1, class InputIterator2, class BinaryPredicate>
+		bool equal (InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred)
+		{
+			while (first1!=last1) {
+				if (!pred(*first1,*first2))
+					return false;
+				++first1; ++first2;
+			}
+			return true;
+		}
+
 	template <class InputIterator1, class InputIterator2>
 		bool lexicographical_compare (InputIterator1 first1, InputIterator1 last1,
 				InputIterator2 first2, InputIterator2 last2)
@@ -18,6 +42,7 @@ namespace ft
 			}
 			return (first2 != last2);
 		}
+
 	// Checks if type is an integral
 	template <typename T>
 		struct is_integral { static const bool value = false; };
@@ -56,6 +81,7 @@ namespace ft
 		struct is_integral<unsigned long long> { static const bool value = true; };
 
 
+	// True and False type
 	struct true_type {
 		operator bool() { return true; }
 	};

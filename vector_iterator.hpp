@@ -74,21 +74,21 @@ namespace ft
 				return (_current - n);
 			}
 
-			vector_iterator	operator+=(difference_type n) const
+			vector_iterator	operator+=(difference_type n)
 			{
 				_current += n;
 				return (*this);
 			}
 
-			vector_iterator	operator-=(difference_type n) const
+			vector_iterator	operator-=(difference_type n)
 			{
 				_current -= n;
 				return (*this);
 			}
 
-			vector_iterator	operator[](difference_type n) const
+			reference	operator[](difference_type n) const
 			{
-				return (*(operator+(n)));
+				return (*(_current + n));
 			}
 
 			operator vector_iterator<const T> () const
@@ -130,9 +130,20 @@ namespace ft
 		{
 			return lhs.base() < rhs.base();
 		}
+	template <class TL, class TR>
+		bool operator<(const vector_iterator<TL>& lhs, const vector_iterator<TR>& rhs)
+		{
+			return lhs.base() < rhs.base();
+		}
 
 	template <class T>
 		bool operator>(const vector_iterator<T>& lhs, const vector_iterator<T>& rhs)
+		{
+			return lhs.base() > rhs.base();
+		}
+
+	template <class TL, class TR>
+		bool operator>(const vector_iterator<TL>& lhs, const vector_iterator<TR>& rhs)
 		{
 			return lhs.base() > rhs.base();
 		}
@@ -143,6 +154,18 @@ namespace ft
 			return lhs.base() <= rhs.base();
 		}
 
+	template <class TL, class TR>
+		bool operator<=(const vector_iterator<TL>& lhs, const vector_iterator<TR>& rhs)
+		{
+			return lhs.base() <= rhs.base();
+		}
+
+	template <class TL, class TR>
+		bool operator>=(const vector_iterator<TL>& lhs, const vector_iterator<TR>& rhs)
+		{
+			return lhs.base() >= rhs.base();
+		}
+
 	template <class T>
 		bool operator>=(const vector_iterator<T>& lhs, const vector_iterator<T>& rhs)
 		{
@@ -150,8 +173,15 @@ namespace ft
 		}
 
 	template <class T>
+		vector_iterator<T>
+		operator+(int lhs, const vector_iterator<T> rhs)
+		{
+			return lhs + rhs.base();
+		}
+
+	template <class T, class U>
 		typename vector_iterator<T>::difference_type
-		operator-(const vector_iterator<T> lhs, const vector_iterator<T> rhs)
+		operator-(const vector_iterator<T> lhs, const vector_iterator<U> rhs)
 		{
 			return lhs.base() - rhs.base();
 		}

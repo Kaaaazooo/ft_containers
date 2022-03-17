@@ -30,6 +30,11 @@ namespace ft
 				pointer end_of_storage;
 
 			public:
+				const_pointer getStart() const
+				{
+					return start;
+				}
+
 				//Constructors
 				explicit vector (const allocator_type& alloc = allocator_type()) :
 				allocator(alloc)
@@ -81,11 +86,17 @@ namespace ft
 					allocator.deallocate(start, capacity());
 				}
 
+				vector& operator= (const vector& x)
+				{
+					assign(x.begin(), x.end());
+					return *this;
+				}
+
 				iterator begin()				{ return iterator(start); }
 				const_iterator begin() const	{ return const_iterator(start); }
 
 				iterator end()				{ return iterator(finish); }
-				const_iterator end() const	{ return iterator(finish); }
+				const_iterator end() const	{ return const_iterator(finish); }
 
 				reverse_iterator rbegin() { return reverse_iterator(this->end()); }
 				const_reverse_iterator rbegin() const { return const_reverse_iterator(this->end()); }
@@ -97,7 +108,7 @@ namespace ft
 
 				size_type max_size() const { return allocator.max_size(); }
 
-				void resize (size_type n, value_type val = value_type())
+				void resize(size_type n, value_type val = value_type())
 				{
 					if (n > capacity())
 						reallocate(n);
@@ -113,7 +124,6 @@ namespace ft
 						while (n > size())
 						{
 							push_back(val);
-							++n;
 						}
 					}
 				}
@@ -122,7 +132,13 @@ namespace ft
 
 				bool empty() const { return (size() ? false : true); }
 
-				//void reserve (size_type n);
+				void reserve (size_type n)
+				{
+					if (n > max_size())
+						throw (std::length_error("vector::reserve"));
+					else if (n > capacity())
+						reallocate(n);
+				}
 
 				reference operator[] (size_type n) { return *(start + n); }
 				const_reference operator[] (size_type n) const { return *(start + n); }
@@ -151,10 +167,14 @@ namespace ft
 						typename ft::enable_if<!ft::is_integral<InputIterator>::value,
 							InputIterator>::type* = NULL)
 					{
-						size_type new_size = last - first;
+						size_type new_size = 0;
+						for (InputIterator tmp = first; tmp != last; tmp++)
+							++new_size;
+						if (new_size > capacity())
+							reallocate(new_size);
 						size_type i;
-						for (i = 0; first + i != last; i++)
-							insert(begin() + i, *(first + i));
+						for (i = 0; first != last; i++)
+							insert(begin() + i, *(first++));
 						while (i < size())
 							allocator.destroy(start + i++);
 						finish = start + new_size;
@@ -227,12 +247,68 @@ namespace ft
 							++position;
 						}
 					}
+
+				iterator erase (iterator position)
+				{
+					if (size())
+					{
+						size_type n = position.base() - begin().base();
+						while (start + n < finish - 1)
+						{
+							start[n] = start[n + 1];
+							++n;
+						}
+						allocator.destroy(finish--);
+					}
+					return (position);
+				}
+
+				iterator erase (iterator first, iterator last)
+				{
+					if (size())
+					{
+						size_type i = first.base() - begin().base();
+						size_type n = last.base() - begin().base();
+						while (start + n < finish)
+						{
+							start[i] = start[n];
+							++i;
+							++n;
+						}
+						while (finish != start + i)
+							allocator.destroy(finish--);
+					}
+					return (first);
+				}
+
+				void swap (vector& x)
+				{
+					if (x != *this)
+					{
+						pointer tmp_start = x.start;
+						pointer tmp_finish = x.finish;
+						pointer tmp_end_of_storage = x.end_of_storage;
+						allocator_type tmp_allocator = x.allocator;
+
+						x.start = this->start;
+						x.finish = this->finish;
+						x.end_of_storage = this->end_of_storage;
+						x.allocator = this->allocator;
+
+						this->start = tmp_start;
+						this->finish = tmp_finish;
+						this->end_of_storage = tmp_end_of_storage;
+						this->allocator = tmp_allocator;
+					}
+				}
+
 				void clear()
 				{
 					for (size_type i = 0; i < size(); i ++)
 						allocator.destroy(start + i);
 					finish = start;
 				}
+
 
 			protected:
 				void reallocate(size_type new_capacity)
@@ -250,6 +326,30 @@ namespace ft
 					end_of_storage = start + new_capacity;
 				}
 		};
+
+	template <class T, class Alloc>
+		bool operator== (const vector<T,Alloc>& lhs, const vector<T,Alloc>& rhs)
+		{
+			return (lhs.size() == rhs.size() && ft::equal(lhs.begin(), lhs.end(), rhs.begin()));
+		}
+
+	template <class T, class Alloc>
+		bool operator!= (const vector<T,Alloc>& lhs, const vector<T,Alloc>& rhs) { return !(lhs == rhs); }
+
+	template <class T, class Alloc>
+		bool operator<  (const vector<T,Alloc>& lhs, const vector<T,Alloc>& rhs)
+		{
+			return ft::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+		}
+
+	template <class T, class Alloc>
+		bool operator<= (const vector<T,Alloc>& lhs, const vector<T,Alloc>& rhs) { return !(rhs < lhs); }
+
+	template <class T, class Alloc>
+		bool operator>  (const vector<T,Alloc>& lhs, const vector<T,Alloc>& rhs) { return rhs < lhs; }
+
+	template <class T, class Alloc>
+		bool operator>= (const vector<T,Alloc>& lhs, const vector<T,Alloc>& rhs) { return !(lhs < rhs); }
 }
 
 #endif
