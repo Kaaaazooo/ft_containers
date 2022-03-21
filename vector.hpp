@@ -1,7 +1,9 @@
 #ifndef VECTOR_HPP
 # define VECTOR_HPP
+
 # include <memory>
 # include <stdexcept>
+
 # include "iterator.hpp"
 # include "vector_iterator.hpp"
 
@@ -30,10 +32,6 @@ namespace ft
 				pointer end_of_storage;
 
 			public:
-				const_pointer getStart() const
-				{
-					return start;
-				}
 
 				//Constructors
 				explicit vector (const allocator_type& alloc = allocator_type()) :
@@ -92,6 +90,7 @@ namespace ft
 					return *this;
 				}
 
+				// Iterators
 				iterator begin()				{ return iterator(start); }
 				const_iterator begin() const	{ return const_iterator(start); }
 
@@ -104,6 +103,7 @@ namespace ft
 				reverse_iterator rend() { return reverse_iterator(this->begin()); }
 				const_reverse_iterator rend() const { return const_reverse_iterator(this->begin()); }
 
+				// Capacity
 				size_type size() const	{ return finish - start; }
 
 				size_type max_size() const { return allocator.max_size(); }
@@ -140,6 +140,7 @@ namespace ft
 						reallocate(n);
 				}
 
+				// Element access
 				reference operator[] (size_type n) { return *(start + n); }
 				const_reference operator[] (size_type n) const { return *(start + n); }
 
@@ -162,6 +163,7 @@ namespace ft
 				reference back() { return *(finish - 1); }
 				const_reference back() const { return *(finish - 1); }
 
+				// Modifiers
 				template <class InputIterator>
 					void assign (InputIterator first, InputIterator last,
 						typename ft::enable_if<!ft::is_integral<InputIterator>::value,
