@@ -1,6 +1,8 @@
 #ifndef RB_TREE_H
 #define RB_TREE_H
 
+# include "pair.hpp"
+
 namespace ft
 {
 	/*
@@ -41,8 +43,14 @@ namespace ft
 			public:
 				rb_tree(void) : _root(NULL), _size(0) { }
 
+				~rb_tree(void)
+				{
+					freeTree(_root);
+				}
+
 				void add (K key, V value)
 				{
+					std::cout << std::endl << "ADDING " << key << std::endl << std::endl;
 					Node<K, V> *node = new Node<K, V>(key, value);
 					if (_root == NULL)
 					{
@@ -56,6 +64,26 @@ namespace ft
 					++_size;
 				}
 			private:
+				void freeTree(Node<K, V> *node)
+				{
+					if (node == NULL)
+						return ;
+					freeTree(node->left);
+					freeTree(node->right);
+					delete(node);
+					node = NULL;
+				}
+
+				void printNode(Node<K, V> *node, const char *char_str)
+				{
+					std::string str(char_str);
+					std::cout << str << "(" << node << ") = ";
+					if (node)
+						std::cout << node->key << std::endl;
+					else
+						std::cout << "NIL" << std::endl;
+				}
+
 				void add(Node<K, V> *parent, Node<K, V> *newNode)
 				{
 					if (newNode->key > parent->key)
