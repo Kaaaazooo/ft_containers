@@ -3,6 +3,9 @@
 
 # include "pair.hpp"
 
+# define RED true
+# define BLACK false
+
 namespace ft
 {
 	/*
@@ -18,44 +21,65 @@ namespace ft
 	 *		2) If aunt is RED : color flip -> Parent = RED Children = BLACK.
 	 */
 
-	template<class K, class V>
+
+	template<class T>
 		class Node
 		{
 			public:
-				K key;
-				V value;
-				Node<K, V> *left;
-				Node<K, V> *right;
-				Node<K, V> *parent;
-				bool isLeftChild;
-				bool black;
+				T data;
+				Node<T> *left;
+				Node<T> *right;
+				Node<T> *parent;
+				bool color;
 
-				Node (K k, V v) : key(k), value(v), left(NULL), right(NULL), parent(NULL),
-					isLeftChild(false), black(false) { }
+				Node (void) : data(), left(NULL), right(NULL), parent(NULL), color(RED) { }
+				Node (T d) : data(d), left(NULL), right(NULL), parent(NULL), color(RED) { }
+
+				bool isLeftChild(void) { return this->parent->left == this; }
+				bool isBlack(void) { return this->color == BLACK; }
 		};
 
-	template<class K, class V>
+	template<class T>
 		class rb_tree
 		{
-			protected:
-				Node<K,V>	*_root;
-				size_t		_size;
 			public:
-				rb_tree(void) : _root(NULL), _size(0) { }
+				typedef T									value_type;
+				typedef typename value_type::first_type		key_type;
+				typedef typename value_type::second_type	mapped_type;
+				typedef Node<value_type>*					NodePtr;
 
+			protected:
+				NodePtr	_tnull;
+				NodePtr	_root;
+				size_t	_size;
+
+			public:
+				rb_tree(void)
+				{
+					_tnull = new Node<T>();
+					_tnull->parent = NULL;
+					_tnull->left = NULL;
+					_tnull->right = NULL;
+					_tnull->color = BLACK;
+					_root = _tnull;
+					_size = 0;
+				}
 				~rb_tree(void)
 				{
 					freeTree(_root);
+					delete(_tnull);
 				}
-
-				void add (K key, V value)
+				void add (value_type newMapped)
 				{
-					std::cout << std::endl << "ADDING " << key << std::endl << std::endl;
-					Node<K, V> *node = new Node<K, V>(key, value);
-					if (_root == NULL)
+					NodePtr node = new Node<value_type>(newMapped);
+					node->data = newMapped;
+					node->left = _tnull;
+					node->right = _tnull;
+					node->parent = _tnull;
+					if (_root == _tnull)
 					{
 						_root = node;
-						_root->black = true;
+						_root->color = BLACK;
 					}
 					else
 					{
@@ -63,10 +87,22 @@ namespace ft
 					}
 					++_size;
 				}
-			private:
-				void freeTree(Node<K, V> *node)
+				void del(key_type key)
 				{
-					if (node == NULL)
+					del(find(key, _root));
+				}
+				mapped_type find (key_type key)
+				{
+					NodePtr node = find(key, _root);
+					if (node && node != _tnull)
+						return (node->data.second);
+					else
+						return (mapped_type());
+				}
+			private:
+				void freeTree(NodePtr node)
+				{
+					if (node == NULL || node == _tnull)
 						return ;
 					freeTree(node->left);
 					freeTree(node->right);
@@ -74,21 +110,166 @@ namespace ft
 					node = NULL;
 				}
 
-				void printNode(Node<K, V> *node, const char *char_str)
+				void rotate (NodePtr node)
 				{
-					std::string str(char_str);
-					std::cout << str << "(" << node << ") = ";
-					if (node)
-						std::cout << node->key << std::endl;
+					if (node->isLeftChild())
+					{
+						if (node->parent->isLeftChild())
+						{
+							rightRotate(node->parent->parent);
+							node->color = RED;
+							node->parent->color = BLACK;
+							if (node->parent->right != _tnull)
+								node->parent->right->color = RED;
+						}
+						else
+						{
+							rightLeftRotate(node->parent->parent);
+							node->color = BLACK;
+							node->right->color = RED;
+							node->left->color = RED;
+						}
+					}
 					else
-						std::cout << "NIL" << std::endl;
+					{
+						if (!node->parent->isLeftChild())
+						{
+							leftRotate(node->parent->parent);
+							node->color = RED;
+							node->parent->color = BLACK;
+							if (node->parent->left != _tnull)
+								node->parent->left->color = RED;
+						}
+						else
+						{
+							leftRightRotate(node->parent->parent);
+							node->color = BLACK;
+							node->left->color = RED;
+							node->right->color = RED;
+						}
+					}
 				}
 
-				void add(Node<K, V> *parent, Node<K, V> *newNode)
+				void leftRotate(NodePtr node)
 				{
-					if (newNode->key > parent->key)
+					NodePtr tmp = node->right;
+					node->right = tmp->left;
+					if (node->right != _tnull)
 					{
-						if (parent->right == NULL)
+						node->right->parent = node;
+					}
+					if (node->parent == _tnull)
+					{
+						_root = tmp;
+						tmp->parent = _tnull;
+					}
+					else
+					{
+						tmp->parent = node->parent;
+						if (node->isLeftChild())
+						{
+							tmp->parent->left = tmp;
+						}
+						else
+						{
+							tmp->parent->right = tmp;
+						}
+					}
+					tmp->left = node;
+					node->parent = tmp;
+				}
+
+				void rightRotate(NodePtr node)
+				{
+					NodePtr tmp = node->left;
+					node->left = tmp->right;
+					if (node->left != _tnull)
+					{
+						node->left->parent = node;
+					}
+					if (node->parent == _tnull)
+					{
+						_root = tmp;
+						tmp->parent = _tnull;
+					}
+					else
+					{
+						tmp->parent = node->parent;
+						if (!node->isLeftChild())
+						{
+							tmp->parent->right = tmp;
+						}
+						else
+						{
+							tmp->parent->left = tmp;
+						}
+					}
+					tmp->right = node;
+					node->parent = tmp;
+				}
+
+				void leftRightRotate(NodePtr node)
+				{
+					leftRotate(node->left);
+					rightRotate(node);
+				}
+
+				void rightLeftRotate(NodePtr node)
+				{
+					rightRotate(node->right);
+					leftRotate(node);
+				}
+				void checkColor(NodePtr node)
+				{
+					if (node == _root)
+					{
+						if (!node->isBlack())
+							node->color = BLACK;
+						return;
+					}
+					if (!node->isBlack() && !node->parent->isBlack())
+					{
+						correctTree(node);
+					}
+					if (node != _root)
+						checkColor(node->parent);
+				}
+
+				void correctTree(NodePtr node)
+				{
+					if (node->parent->isLeftChild())
+					{
+						// aunt is node.parent.parent.right
+						if (node->parent->parent->right == _tnull || node->parent->parent->right->isBlack())
+						{
+							rotate(node);
+							return ;
+						}
+						if (node->parent->parent->right != _tnull)
+							node->parent->parent->right->color = BLACK;
+						node->parent->parent->color = RED;
+						node->parent->color = BLACK;
+					}
+					else
+					{
+						// aunt is node.parent.parent.left
+						if (node->parent->parent->left == _tnull || node->parent->parent->left->isBlack())
+						{
+							rotate(node);
+							return ;
+						}
+						if (node->parent->parent->left != _tnull)
+							node->parent->parent->left->color = BLACK;
+						node->parent->parent->color = RED;
+						node->parent->color = BLACK;
+					}
+				}
+
+				void add(NodePtr parent, NodePtr newNode)
+				{
+					if (newNode->data > parent->data)
+					{
+						if (parent->right == _tnull)
 						{
 							parent->right = newNode;
 							newNode->parent = parent;
@@ -98,11 +279,10 @@ namespace ft
 					}
 					else
 					{
-						if (parent->left == NULL)
+						if (parent->left == _tnull)
 						{
 							parent->left = newNode;
 							newNode->parent = parent;
-							newNode->isLeftChild = true;
 						}
 						else
 							add(parent->left, newNode);
@@ -110,240 +290,172 @@ namespace ft
 					checkColor(newNode);
 				}
 
-				void checkColor(Node<K, V> *node)
+				void fixDelete(NodePtr node)
 				{
-
-					if (node == _root)
+					NodePtr tmp;
+					while (node != _root && node->color == BLACK)
 					{
-						if (!node->black)
-							node->black = true;
+						if (node->isLeftChild())
+						{
+							tmp = node->parent->right;
+							if (tmp->color == RED)
+							{
+								tmp->color = BLACK;
+								node->parent->color = RED;
+								leftRotate(node->parent);
+								tmp = node->parent->right;
+							}
+
+							if (tmp->left->color == BLACK && tmp->right->color == BLACK)
+							{
+								tmp->color = RED;
+								node = node->parent;
+							}
+							else
+							{
+								if (tmp->right->color == BLACK)
+								{
+									tmp->left->color = BLACK;
+									tmp->color = RED;
+									rightRotate(tmp);
+									tmp = node->parent->right;
+								} 
+								tmp->color = node->parent->color;
+								node->parent->color = BLACK;
+								tmp->right->color = BLACK;
+								leftRotate(node->parent);
+								node = _root;
+							}
+						}
+						else
+						{
+							tmp = node->parent->left;
+							if (tmp->color == RED)
+							{
+								tmp->color = BLACK;
+								node->parent->color = RED;
+								rightRotate(node->parent);
+								tmp = node->parent->left;
+							}
+
+							if (tmp->right->color == BLACK && tmp->right->color == BLACK)
+							{
+								tmp->color = RED;
+								node = node->parent;
+							}
+							else
+							{
+								if (tmp->left->color == BLACK)
+								{
+									tmp->right->color = BLACK;
+									tmp->color = RED;
+									leftRotate(tmp);
+									tmp = node->parent->left;
+								} 
+
+								tmp->color = node->parent->color;
+								node->parent->color = BLACK;
+								tmp->left->color = BLACK;
+								rightRotate(node->parent);
+								node = _root;
+							}
+						} 
+					}
+					node->color = BLACK;
+				}
+
+				void transplant(NodePtr u, NodePtr v){
+					if (u == _root)
+						_root = v;
+					else if (u->isLeftChild())
+						u->parent->left = v;
+					else
+						u->parent->right = v;
+					v->parent = u->parent;
+				}
+
+				void del(NodePtr node)
+				{
+					if (node == NULL || node == _tnull)
+						return ;
+					NodePtr z = node;
+					NodePtr y = z;
+					NodePtr x = z;
+					bool y_color = y->color;
+					if (z->left == _tnull || z->right == _tnull)
+					{
+						x = z->left == _tnull ? z->right : z->left;
+						transplant(z, x);
+					}
+					else
+					{
+						y = z->right;
+						while (y->left != _tnull)
+							y = y->left;
+						y_color = y->color;
+						x = y->right;
+						if (y->parent == z)
+							x->parent = y;
+						else
+						{
+							transplant(y, y->right);
+							y->right = z->right;
+							y->right->parent = y;
+						}
+						transplant(z, y);
+						y->left = z->left;
+						y->left->parent = y;
+						y->color = z->color;
+					}
+					delete z;
+					if (y_color == 0)
+						fixDelete(x);
+				}
+
+				NodePtr find (key_type key, NodePtr node)
+				{
+					if (node == _tnull)
+						return (_tnull);
+					if (key == node->data.first)
+						return node;
+					else if (key < node->data.first)
+						return (find(key, node->left));
+					else
+						return (find(key, node->right));
+				}
+
+			public:
+
+				void print(NodePtr node, int space)
+				{
+					// Base case
+					if (node == _tnull)
 						return;
-					}
-					if (!node->black && !node->parent->black)
-						correctTree(node);
-					if (node != _root)
-						checkColor(node->parent);
-				}
 
-				void correctTree(Node<K, V> *node)
-				{
-					if (node->parent->isLeftChild)
-					{
-						// aunt is node.parent.parent.right
-						if (node->parent->parent->right == NULL || node->parent->parent->right->black)
-						{
-							rotate(node);
-							return ;
-						}
-						if (node->parent->parent->right)
-							node->parent->parent->right->black = true;
-						node->parent->parent->black = false;
-						node->parent->black = true;
-					}
+					// Increase distance between levels
+					space += 10;
+
+					// Process right child first
+					print(node->right, space);
+
+					// Print current node after space
+					// count
+					std::cout << std::endl;
+					for (int i = 10; i < space; i++)
+						std::cout << " ";
+					if (node->isBlack())
+						std::cout << "\033[1;34m" << node->data.first << "\033[0m\n";
 					else
-					{
-						// aunt is node.parent.parent.left
-						if (node->parent->parent->left == NULL || node->parent->parent->left->black)
-						{
-							rotate(node);
-							return ;
-						}
-						if (node->parent->parent->left)
-							node->parent->parent->left->black = true;
-						node->parent->parent->black = false;
-						node->parent->black = true;
-					}
+						std::cout << "\033[1;31m" << node->data.first << "\033[0m\n";
+
+					// Process left child
+					print(node->left, space);
 				}
 
-				void rotate (Node<K, V> *node)
+				void print(void)
 				{
-					if (node->isLeftChild)
-					{
-						if (node->parent->isLeftChild)
-						{
-							rightRotate(node->parent->parent);
-							node->black = false;
-							node->parent->black = true;
-							if (node->parent->right)
-								node->parent->right->black = false;
-						}
-						else
-						{
-							rightLeftRotate(node->parent->parent);
-							node->black = true;
-							node->right->black = false;
-							node->left->black = false;
-						}
-					}
-					else
-					{
-						if (!node->parent->isLeftChild)
-						{
-							leftRotate(node->parent->parent);
-							node->black = false;
-							node->parent->black = true;
-							if (node->parent->left)
-								node->parent->left->black = false;
-						}
-						else
-						{
-							leftRightRotate(node->parent->parent);
-							node->black = true;
-							node->left->black = false;
-							node->right->black = false;
-						}
-					}
+					print(_root, 0);
 				}
-
-				void leftRotate(Node<K, V> *node)
-				{
-					Node<K, V> *tmp = node->right;
-					node->right = tmp->left;
-					if (node->right)
-					{
-						node->right->parent = node;
-						node->right->isLeftChild = false;
-
-					}
-					if (node->parent == NULL)
-					{
-						_root = tmp;
-						tmp->parent = NULL;
-					}
-					else
-					{
-						tmp->parent = node->parent;
-						if (node->isLeftChild)
-						{
-							tmp->isLeftChild = true;
-							tmp->parent->left = tmp;
-						}
-						else
-						{
-							tmp->isLeftChild = false;
-							tmp->parent->right = tmp;
-						}
-					}
-					tmp->left = node;
-					node->isLeftChild = true;
-					node->parent = tmp;
-				}
-
-				void rightRotate(Node<K, V> *node)
-				{
-					Node<K, V> *tmp = node->left;
-					node->left = tmp->right;
-					if (node->left)
-					{
-						node->left->parent = node;
-						node->left->isLeftChild = true;
-
-					}
-					if (node->parent == NULL)
-					{
-						_root = tmp;
-						tmp->parent = NULL;
-					}
-					else
-					{
-						tmp->parent = node->parent;
-						if (!node->isLeftChild)
-						{
-							tmp->isLeftChild = false;
-							tmp->parent->right = tmp;
-						}
-						else
-						{
-							tmp->isLeftChild = true;
-							tmp->parent->left = tmp;
-						}
-					}
-					tmp->right = node;
-					node->isLeftChild = false;
-					node->parent = tmp;
-				}
-
-				void leftRightRotate(Node<K, V> *node)
-				{
-					leftRotate(node->left);
-					rightRotate(node);
-				}
-
-				void rightLeftRotate(Node<K, V> *node)
-				{
-					rightRotate(node->right);
-					leftRotate(node);
-				}
-
-				public:
-					size_t height(void)
-					{
-						if (_root == NULL)
-							return (0);
-						return height(_root) - 1;
-					}
-
-					size_t height(Node<K, V> *node)
-					{
-						if (node == NULL)
-							return (0);
-						size_t leftHeight = height(node->left) + 1;
-						size_t rightHeight = height(node->right) + 1;
-						return (leftHeight > rightHeight ? leftHeight : rightHeight);
-					}
-
-					size_t blackNodes(void)
-					{
-						blackNodes(_root);
-					}
-
-					size_t blackNodes(Node<K, V> *node)
-					{
-						if (node == NULL)
-							return 1;
-						size_t rightBlackNodes = blackNodes(node->right);
-						size_t leftBlackNodes = blackNodes(node->left);
-						if (rightBlackNodes != leftBlackNodes)
-						{
-							throw "invalid red black tree";
-						}
-						if (node->black)
-						{
-							++leftBlackNodes;
-						}
-						return leftBlackNodes;
-					}
-
-					void print(Node<K, V> *root, int space)
-					{
-						// Base case
-						if (root == NULL)
-							return;
-
-						// Increase distance between levels
-						space += 10;
-
-						// Process right child first
-						print(root->right, space);
-
-						// Print current node after space
-						// count
-						std::cout << std::endl;
-						for (int i = 10; i < space; i++)
-							std::cout << " ";
-						if (root->black)
-							std::cout << "\033[1;34m" << root->key << "\033[0m\n";
-						else
-							std::cout << "\033[1;31m" << root->key << "\033[0m\n";
-
-						// Process left child
-						print(root->left, space);
-					}
-
-					void print(void)
-					{
-						print(_root, 0);
-					}
 		};
 
 }
