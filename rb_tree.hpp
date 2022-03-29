@@ -85,6 +85,7 @@ namespace ft
 				typedef typename allocator_type::const_reference	const_reference;
 				typedef typename allocator_type::pointer			pointer;
 				typedef typename allocator_type::const_pointer		const_pointer;
+				typedef typename allocator_type::size_type			size_type;
 
 				class iterator;
 				class const_iterator;
@@ -95,7 +96,7 @@ namespace ft
 				node_allocator _node_alloc;
 				node_pointer	_tnull;
 				node_pointer	_root;
-				size_t	_size;
+				size_type	_size;
 
 			public:
 				rb_tree(const Compare comp = Compare(), allocator_type alloc = allocator_type())
@@ -142,6 +143,10 @@ namespace ft
 					tmp = this->_root;
 					this->_root = x._root;
 					x._root = tmp;
+
+					size_type tmp_size = this->_size;
+					this->_size = x._size;
+					x._size = tmp_size;
 				}
 
 				node_pointer add (value_type newMapEntry)
@@ -173,7 +178,7 @@ namespace ft
 					return node;
 				}
 
-				size_t del(key_type key)
+				size_type del(key_type key)
 				{
 					return (del(find(key, _root)));
 				}
@@ -266,8 +271,8 @@ namespace ft
 					return (*this);
 				}
 
-				size_t size(void) const { return _size; }
-				size_t max_size(void) const { return _alloc.max_size(); }
+				size_type size(void) const { return _size; }
+				size_type max_size(void) const { return _alloc.max_size(); }
 
 				void printNode(node_pointer node, const char *char_str) const
 				{
@@ -577,7 +582,7 @@ namespace ft
 					v->parent = u->parent;
 				}
 
-				size_t del(node_pointer node)
+				size_type del(node_pointer node)
 				{
 					if (node == NULL || node == _tnull || node->is_tnull == true)
 						return 0;
