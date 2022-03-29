@@ -2,6 +2,7 @@
 #define RB_TREE_H
 
 # include "pair.hpp"
+# include "rb_tree_iterator.hpp"
 
 # define RED true
 # define BLACK false
@@ -26,53 +27,133 @@ namespace ft
 		class Node
 		{
 			public:
+				typedef Node*	node_pointer;
+
 				T data;
 				Node<T> *left;
 				Node<T> *right;
 				Node<T> *parent;
 				bool color;
+				bool is_tnull;
 
-				Node (void) : data(), left(NULL), right(NULL), parent(NULL), color(RED) { }
-				Node (T d) : data(d), left(NULL), right(NULL), parent(NULL), color(RED) { }
+				Node (void) : data(), left(NULL), right(NULL), parent(NULL), color(RED), is_tnull(false) { }
+				Node (T d) : data(d), left(NULL), right(NULL), parent(NULL), color(RED), is_tnull(false) { }
+				Node (Node const & node) : data(node.data), left(node.left), right(node.right),
+					parent(node.parent), color(node.color), is_tnull(node.is_tnull) { }
 
 				bool isLeftChild(void) { return this->parent->left == this; }
 				bool isBlack(void) { return this->color == BLACK; }
+
+				node_pointer leftmost(node_pointer tnull)
+				{
+					if (is_tnull || this == tnull)
+						return (tnull);
+					node_pointer tmp = this;
+					while (tmp->left && tmp->left != tnull && tmp->left->is_tnull == false)
+					{
+						tmp = tmp->left;
+					}
+					return tmp;
+				}
+
+				node_pointer rightmost(node_pointer tnull)
+				{
+					if (is_tnull || this == tnull)
+						return (tnull);
+					node_pointer tmp = this;
+					while (tmp->right && tmp->right != tnull && tmp->right->is_tnull == false)
+						tmp = tmp->right;
+					return tmp;
+				}
 		};
 
-	template<class T>
+	template < class T, class Compare = std::less<typename T::first>,
+		class Alloc = std::allocator<T> >
 		class rb_tree
 		{
 			public:
-				typedef T									value_type;
-				typedef typename value_type::first_type		key_type;
-				typedef typename value_type::second_type	mapped_type;
-				typedef Node<value_type>*					NodePtr;
+				typedef T											value_type;
+				typedef typename value_type::first_type				key_type;
+				typedef typename value_type::second_type			mapped_type;
+				typedef Node<value_type>							node_t;
+				typedef Node<value_type>*							node_pointer;
+
+				typedef Alloc										allocator_type;
+				typedef typename Alloc::template
+					rebind<node_t>::other							node_allocator;
+				typedef typename allocator_type::reference			reference;
+				typedef typename allocator_type::const_reference	const_reference;
+				typedef typename allocator_type::pointer			pointer;
+				typedef typename allocator_type::const_pointer		const_pointer;
+
+				class iterator;
+				class const_iterator;
 
 			protected:
-				NodePtr	_tnull;
-				NodePtr	_root;
+				Compare _key_compare;
+				allocator_type _alloc;
+				node_allocator _node_alloc;
+				node_pointer	_tnull;
+				node_pointer	_root;
 				size_t	_size;
 
 			public:
-				rb_tree(void)
+				rb_tree(const Compare comp = Compare(), allocator_type alloc = allocator_type())
+					: _key_compare(comp), _alloc(alloc)
 				{
-					_tnull = new Node<T>();
+					_tnull = _node_alloc.allocate(1);
 					_tnull->parent = NULL;
 					_tnull->left = NULL;
 					_tnull->right = NULL;
 					_tnull->color = BLACK;
+					_tnull->is_tnull = true;
 					_root = _tnull;
 					_size = 0;
+				}
+
+				rb_tree(const rb_tree& cpy)
+					: _key_compare(cpy._key_compare), _alloc(cpy._alloc), _node_alloc(cpy._node_alloc)
+				{
+					_tnull = _node_alloc.allocate(1);
+					_tnull->parent = NULL;
+					_tnull->left = NULL;
+					_tnull->right = NULL;
+					_tnull->color = BLACK;
+					_tnull->is_tnull = true;
+					_size = cpy._size;
+					copy(_tnull, _root, cpy._root, cpy._tnull);
 				}
 				~rb_tree(void)
 				{
 					freeTree(_root);
-					delete(_tnull);
+					_node_alloc.destroy(_tnull);
+					_node_alloc.deallocate(_tnull, 1);
 				}
-				void add (value_type newMapped)
+
+				void swap(rb_tree& x)
 				{
-					NodePtr node = new Node<value_type>(newMapped);
-					node->data = newMapped;
+					if (&x == this)
+						return ;
+
+					node_pointer tmp = this->_tnull;
+					this->_tnull = x._tnull;
+					x._tnull = tmp;
+
+					tmp = this->_root;
+					this->_root = x._root;
+					x._root = tmp;
+				}
+
+				node_pointer add (value_type newMapEntry)
+				{
+					node_pointer tmp = find(newMapEntry.first, _root);
+					if (tmp && tmp != _tnull)
+						return tmp;
+					node_pointer node = _node_alloc.allocate(1);
+					node->color = RED;
+					node->is_tnull = false;
+					//node->data = newMapEntry;
+					_alloc.construct(&(node->data), newMapEntry);
 					node->left = _tnull;
 					node->right = _tnull;
 					node->parent = _tnull;
@@ -86,31 +167,155 @@ namespace ft
 						add(_root, node);
 					}
 					++_size;
+					_tnull->left = getMin();
+					_tnull->right = getMax();
+					_tnull->parent = _root;
+					return node;
 				}
-				void del(key_type key)
+
+				size_t del(key_type key)
 				{
-					del(find(key, _root));
+					return (del(find(key, _root)));
 				}
-				mapped_type find (key_type key)
+
+				void clear(void)
 				{
-					NodePtr node = find(key, _root);
+					freeTree(_root);
+					_size = 0;
+					_root = _tnull;
+				}
+
+				node_pointer find (key_type key) const
+				{
+					return find(key, _root);
+				}
+
+				node_pointer lower_bound(const key_type& key) const
+				{
+					node_pointer current = _root;
+					node_pointer ret = _tnull;
+					while (current != _tnull)
+					{
+						if (_key_compare(current->data.first, key) == false)
+						{
+							ret = current;
+							current = current->left;
+						}
+						else
+							current = current->right;
+					}
+					return ret;
+				}
+
+				node_pointer upper_bound(const key_type& key) const
+				{
+					node_pointer current = _root;
+					node_pointer ret = _tnull;
+					while (current != _tnull)
+					{
+						if (_key_compare(key, current->data.first))
+						{
+							ret = current;
+							current = current->left;
+						}
+						else
+						{
+							current = current->right;
+						}
+					}
+					return ret;
+				}
+
+				node_pointer getRoot(void) const
+				{
+					return _root;
+				}
+
+				node_pointer getEnd(void) const
+				{
+					return _tnull;
+				}
+
+				allocator_type getAllocator(void) const
+				{
+					return _alloc;
+				}
+
+				node_pointer getMin(void) const
+				{
+					return (_root->leftmost(_tnull));
+				}
+
+				node_pointer getMax(void) const
+				{
+					return (_root->rightmost(_tnull));
+				}
+
+				Compare getKeyComp(void) const { return _key_compare; }
+
+				rb_tree &operator=(const rb_tree &op)
+				{
+					if (this == &op)
+						return (*this);
+					freeTree(_root);
+					copy(_tnull, _root, op._root, op._tnull);
+					_size = op._size;
+					_tnull->left = getMin();
+					_tnull->right = getMax();
+					_tnull->parent = _root;
+					return (*this);
+				}
+
+				size_t size(void) const { return _size; }
+				size_t max_size(void) const { return _alloc.max_size(); }
+
+				void printNode(node_pointer node, const char *char_str) const
+				{
+					std::string str(char_str);
+					std::cout << str << "(" << node << ") = ";
 					if (node && node != _tnull)
-						return (node->data.second);
+						std::cout << node->data.first << " - " << node->data.second << std::endl;
 					else
-						return (mapped_type());
+						std::cout << "NIL" << std::endl;
 				}
+
 			private:
-				void freeTree(NodePtr node)
+
+				node_pointer	copy(node_pointer& parent, node_pointer& node,
+					const node_pointer src, node_pointer cpy_tnull)
+				{
+					if (src && src != cpy_tnull)
+					{
+						node = _node_alloc.allocate(1);
+						//node->data = src->data;
+						_alloc.construct(&(node->data), src->data);
+						node->color = src->color;
+						node->is_tnull = false;
+						node->parent = parent;
+						node->left = _tnull;
+						node->right = _tnull;
+						if (src->left && src->left != cpy_tnull)
+							node->left = copy(node, node->left, src->left, cpy_tnull);
+						if (src->right && src->right != cpy_tnull)
+							node->right = copy(node, node->right, src->right, cpy_tnull);
+					}
+					else
+						node = _tnull;
+					return (node);
+				}
+
+				void freeTree(node_pointer node)
 				{
 					if (node == NULL || node == _tnull)
 						return ;
 					freeTree(node->left);
 					freeTree(node->right);
-					delete(node);
+					_node_alloc.destroy(node);
+					_node_alloc.deallocate(node, 1);
 					node = NULL;
 				}
 
-				void rotate (NodePtr node)
+				void rotate (node_pointer node)
 				{
 					if (node->isLeftChild())
 					{
@@ -150,9 +355,9 @@ namespace ft
 					}
 				}
 
-				void leftRotate(NodePtr node)
+				void leftRotate(node_pointer node)
 				{
-					NodePtr tmp = node->right;
+					node_pointer tmp = node->right;
 					node->right = tmp->left;
 					if (node->right != _tnull)
 					{
@@ -179,9 +384,9 @@ namespace ft
 					node->parent = tmp;
 				}
 
-				void rightRotate(NodePtr node)
+				void rightRotate(node_pointer node)
 				{
-					NodePtr tmp = node->left;
+					node_pointer tmp = node->left;
 					node->left = tmp->right;
 					if (node->left != _tnull)
 					{
@@ -208,18 +413,18 @@ namespace ft
 					node->parent = tmp;
 				}
 
-				void leftRightRotate(NodePtr node)
+				void leftRightRotate(node_pointer node)
 				{
 					leftRotate(node->left);
 					rightRotate(node);
 				}
 
-				void rightLeftRotate(NodePtr node)
+				void rightLeftRotate(node_pointer node)
 				{
 					rightRotate(node->right);
 					leftRotate(node);
 				}
-				void checkColor(NodePtr node)
+				void checkColor(node_pointer node)
 				{
 					if (node == _root)
 					{
@@ -235,11 +440,10 @@ namespace ft
 						checkColor(node->parent);
 				}
 
-				void correctTree(NodePtr node)
+				void correctTree(node_pointer node)
 				{
 					if (node->parent->isLeftChild())
 					{
-						// aunt is node.parent.parent.right
 						if (node->parent->parent->right == _tnull || node->parent->parent->right->isBlack())
 						{
 							rotate(node);
@@ -252,7 +456,6 @@ namespace ft
 					}
 					else
 					{
-						// aunt is node.parent.parent.left
 						if (node->parent->parent->left == _tnull || node->parent->parent->left->isBlack())
 						{
 							rotate(node);
@@ -265,9 +468,9 @@ namespace ft
 					}
 				}
 
-				void add(NodePtr parent, NodePtr newNode)
+				void add(node_pointer parent, node_pointer newNode)
 				{
-					if (newNode->data > parent->data)
+					if (_key_compare(parent->data.first, newNode->data.first))
 					{
 						if (parent->right == _tnull)
 						{
@@ -290,9 +493,9 @@ namespace ft
 					checkColor(newNode);
 				}
 
-				void fixDelete(NodePtr node)
+				void fixDelete(node_pointer node)
 				{
-					NodePtr tmp;
+					node_pointer tmp;
 					while (node != _root && node->color == BLACK)
 					{
 						if (node->isLeftChild())
@@ -364,7 +567,7 @@ namespace ft
 					node->color = BLACK;
 				}
 
-				void transplant(NodePtr u, NodePtr v){
+				void transplant(node_pointer u, node_pointer v){
 					if (u == _root)
 						_root = v;
 					else if (u->isLeftChild())
@@ -374,13 +577,14 @@ namespace ft
 					v->parent = u->parent;
 				}
 
-				void del(NodePtr node)
+				size_t del(node_pointer node)
 				{
-					if (node == NULL || node == _tnull)
-						return ;
-					NodePtr z = node;
-					NodePtr y = z;
-					NodePtr x = z;
+					if (node == NULL || node == _tnull || node->is_tnull == true)
+						return 0;
+					--_size;
+					node_pointer z = node;
+					node_pointer y = z;
+					node_pointer x = z;
 					bool y_color = y->color;
 					if (z->left == _tnull || z->right == _tnull)
 					{
@@ -408,25 +612,28 @@ namespace ft
 						y->color = z->color;
 					}
 					delete z;
-					if (y_color == 0)
+					if (y_color == BLACK)
 						fixDelete(x);
+					_tnull->left = getMin();
+					_tnull->right = getMax();
+					_tnull->parent = _root;
+					return 1;
 				}
 
-				NodePtr find (key_type key, NodePtr node)
+				node_pointer find (key_type key, node_pointer node) const
 				{
 					if (node == _tnull)
 						return (_tnull);
-					if (key == node->data.first)
-						return node;
-					else if (key < node->data.first)
+					if (_key_compare(key, node->data.first))
 						return (find(key, node->left));
-					else
+					else if (_key_compare(node->data.first, key))
 						return (find(key, node->right));
+					else
+						return node;
 				}
 
 			public:
-
-				void print(NodePtr node, int space)
+				void print(node_pointer node, int space) const
 				{
 					// Base case
 					if (node == _tnull)
@@ -452,7 +659,7 @@ namespace ft
 					print(node->left, space);
 				}
 
-				void print(void)
+				void print(void) const
 				{
 					print(_root, 0);
 				}

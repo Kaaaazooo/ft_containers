@@ -105,16 +105,6 @@ namespace ft
 	// Define a nested type if some predicate holds.
 	template<bool Cond, class T = void> struct enable_if {};
 	template<class T> struct enable_if<true, T> { typedef T type; };
-
-	/*
-	 ** Iterators tags :
-	 ** Defines the category of an iterator. Each tag is an empty type. 
-	 */
-	struct input_iterator_tag { };
-	struct output_iterator_tag { };
-	struct forward_iterator_tag : public input_iterator_tag { };
-	struct bidirectional_iterator_tag : public forward_iterator_tag { };
-	struct random_access_iterator_tag : public bidirectional_iterator_tag { };
 }
 
 #endif
