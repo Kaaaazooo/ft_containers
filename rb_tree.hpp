@@ -34,22 +34,21 @@ namespace ft
 				Node<T> *right;
 				Node<T> *parent;
 				bool color;
-				bool is_tnull;
 
-				Node (void) : data(), left(NULL), right(NULL), parent(NULL), color(RED), is_tnull(false) { }
-				Node (T d) : data(d), left(NULL), right(NULL), parent(NULL), color(RED), is_tnull(false) { }
+				Node (void) : data(), left(NULL), right(NULL), parent(NULL), color(RED) { }
+				Node (T d) : data(d), left(NULL), right(NULL), parent(NULL), color(RED) { }
 				Node (Node const & node) : data(node.data), left(node.left), right(node.right),
-					parent(node.parent), color(node.color), is_tnull(node.is_tnull) { }
+					parent(node.parent), color(node.color) { }
 
 				bool isLeftChild(void) { return this->parent->left == this; }
 				bool isBlack(void) { return this->color == BLACK; }
 
 				node_pointer leftmost(node_pointer tnull)
 				{
-					if (is_tnull || this == tnull)
+					if (this == tnull)
 						return (tnull);
 					node_pointer tmp = this;
-					while (tmp->left && tmp->left != tnull && tmp->left->is_tnull == false)
+					while (tmp->left && tmp->left != tnull)
 					{
 						tmp = tmp->left;
 					}
@@ -58,10 +57,10 @@ namespace ft
 
 				node_pointer rightmost(node_pointer tnull)
 				{
-					if (is_tnull || this == tnull)
+					if (this == tnull)
 						return (tnull);
 					node_pointer tmp = this;
-					while (tmp->right && tmp->right != tnull && tmp->right->is_tnull == false)
+					while (tmp->right && tmp->right != tnull)
 						tmp = tmp->right;
 					return tmp;
 				}
@@ -107,7 +106,6 @@ namespace ft
 					_tnull->left = NULL;
 					_tnull->right = NULL;
 					_tnull->color = BLACK;
-					_tnull->is_tnull = true;
 					_root = _tnull;
 					_size = 0;
 				}
@@ -120,7 +118,6 @@ namespace ft
 					_tnull->left = NULL;
 					_tnull->right = NULL;
 					_tnull->color = BLACK;
-					_tnull->is_tnull = true;
 					_size = cpy._size;
 					copy(_tnull, _root, cpy._root, cpy._tnull);
 				}
@@ -156,7 +153,6 @@ namespace ft
 						return tmp;
 					node_pointer node = _node_alloc.allocate(1);
 					node->color = RED;
-					node->is_tnull = false;
 					//node->data = newMapEntry;
 					_alloc.construct(&(node->data), newMapEntry);
 					node->left = _tnull;
@@ -272,7 +268,7 @@ namespace ft
 				}
 
 				size_type size(void) const { return _size; }
-				size_type max_size(void) const { return _alloc.max_size(); }
+				size_type max_size(void) const { return _node_alloc.max_size(); }
 
 				void printNode(node_pointer node, const char *char_str) const
 				{
@@ -295,7 +291,6 @@ namespace ft
 						//node->data = src->data;
 						_alloc.construct(&(node->data), src->data);
 						node->color = src->color;
-						node->is_tnull = false;
 						node->parent = parent;
 						node->left = _tnull;
 						node->right = _tnull;
@@ -584,7 +579,7 @@ namespace ft
 
 				size_type del(node_pointer node)
 				{
-					if (node == NULL || node == _tnull || node->is_tnull == true)
+					if (node == NULL || node == _tnull)
 						return 0;
 					--_size;
 					node_pointer z = node;

@@ -32,20 +32,19 @@ namespace ft
 			private:
 				typedef rb_tree_iterator	self_type;
 
-				node_pointer				_root;
 				node_pointer				_current;
 				node_pointer				_tnull;
 				Compare						_key_comp;
 
 			public:
 			rb_tree_iterator(const Compare& key_comp = Compare())
-				: _root(), _current(), _tnull(), _key_comp(key_comp) { }
+				: _current(), _tnull(), _key_comp(key_comp) { }
 
 			rb_tree_iterator(node_pointer current, node_pointer tnull, const Compare& key_comp = Compare())
-				: _root(current), _current(current), _tnull(tnull), _key_comp(key_comp) { }
+				: _current(current), _tnull(tnull), _key_comp(key_comp) { }
 
 			rb_tree_iterator(const self_type& it)
-				: _root(it._root), _current(it._current), _tnull(it._tnull), _key_comp(it._key_comp) { }
+				: _current(it._current), _tnull(it._tnull), _key_comp(it._key_comp) { }
 
 			virtual ~rb_tree_iterator() { }
 
@@ -53,7 +52,6 @@ namespace ft
 			{
 				if (*this == it)
 					return (*this);
-				this->_root = it._root;
 				this->_current = it._current;
 				this->_tnull = it._tnull;
 				this->_key_comp = it._key_comp;
@@ -172,7 +170,6 @@ namespace ft
 		private:
 			typedef const_rb_tree_iterator		self_type;
 
-			node_pointer						_root;
 			node_pointer						_current;
 			node_pointer						_tnull;
 			Compare								_key_comp;
@@ -180,14 +177,14 @@ namespace ft
 		public:
 
 			const_rb_tree_iterator(const Compare& key_comp = Compare())
-				: _root(), _current(), _tnull(), _key_comp(key_comp) { }
+				: _current(), _tnull(), _key_comp(key_comp) { }
 
 			const_rb_tree_iterator(node_pointer node, node_pointer tnull,
 				const Compare& key_comp = Compare())
-				: _root(node), _current(node), _tnull(tnull), _key_comp(key_comp) { }
+				: _current(node), _tnull(tnull), _key_comp(key_comp) { }
 
 			const_rb_tree_iterator(const self_type& it)
-				: _root(it._root), _current(it._current), _tnull(it._tnull), _key_comp() { }
+				: _current(it._current), _tnull(it._tnull), _key_comp() { }
 
 			const_rb_tree_iterator(const rb_tree_iterator<T, Compare>& it)
 				: _current(it._current), _tnull(it._tnull), _key_comp() { }
@@ -198,7 +195,6 @@ namespace ft
 			{
 				if (*this == it)
 					return (*this);
-				this->_root = it._root;
 				this->_current = it._current;
 				this->_tnull = it._tnull;
 				this->_key_comp = it._key_comp;
