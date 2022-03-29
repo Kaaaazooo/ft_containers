@@ -23,6 +23,7 @@ namespace ft
 				typedef vector_iterator<const value_type>				const_iterator;
 				typedef typename ft::reverse_iterator<iterator>			reverse_iterator;
 				typedef typename ft::reverse_iterator<const_iterator>	const_reverse_iterator;
+				typedef ptrdiff_t difference_type;
 				typedef size_t size_type;
 
 			protected:
@@ -46,10 +47,13 @@ namespace ft
 						const allocator_type& alloc = allocator_type()) : allocator(alloc)
 				{
 					start = allocator.allocate(n);
-					finish = start + n;
-					end_of_storage = finish;
-					for (size_t i = 0; i < n; i++)
-						allocator.construct(start + i, val);
+					finish = start;
+					end_of_storage = start + n;
+					while (n--)
+					{
+						allocator.construct(finish, val);
+						++finish;
+					}
 				}
 
 				template <class InputIterator>
@@ -176,7 +180,10 @@ namespace ft
 							reallocate(new_size);
 						size_type i;
 						for (i = 0; first != last; i++)
-							insert(begin() + i, *(first++));
+						{
+							allocator.destroy(start + i);
+							allocator.construct(start + i, *first++);
+						}
 						while (i < size())
 							allocator.destroy(start + i++);
 						finish = start + new_size;
@@ -231,6 +238,12 @@ namespace ft
 
 				void insert (iterator position, size_type n, const value_type& val)
 				{
+					if (size() + n > capacity())
+					{
+						difference_type diff = position - begin();
+						this->reallocate(size() + n);
+						position = begin() + diff;
+					}
 					for (size_t i = 0; i < n; i++)
 					{
 						position = insert(position, val);
@@ -243,6 +256,15 @@ namespace ft
 					 typename ft::enable_if<!ft::is_integral<InputIterator>::value,
 					 	InputIterator>::type* = NULL)
 					{
+						size_type i = 0;
+						for (InputIterator tmp = first; tmp!=last; tmp++)
+							++i;
+						if (size() + i > capacity())
+						{
+							difference_type diff = position - begin();
+							this->reallocate(size() + i);
+							position = begin() + diff;
+						}
 						while (first != last)
 						{
 							position = insert(position, *first++);
