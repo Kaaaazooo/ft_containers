@@ -9,20 +9,6 @@
 
 namespace ft
 {
-	/*
-	 *	- Red Black Tree Rules :
-	 *		1) Every node is red or black.
-	 *		2) Root is always black.
-	 *		3) New insertions are always red.
-	 *		4) Every path from root - leaf has the same nb of BLACK nodes.
-	 *		5) No path can have 2 consecutive RED nodes.
-	 *		6) Nulls are black.
-	 *	- Fixing Rules :
-	 *		1) If aunt is BLACK : rotate -> Parent = BLACK, Children = RED.
-	 *		2) If aunt is RED : color flip -> Parent = RED Children = BLACK.
-	 */
-
-
 	template<class T>
 		class Node
 		{
@@ -66,6 +52,19 @@ namespace ft
 				}
 		};
 
+	/*
+	**	- Red Black Tree Rules :
+	**		1) Every node is red or black.
+	**		2) Root is always black.
+	**		3) New insertions are always red.
+	**		4) Every path from root - leaf has the same nb of BLACK nodes.
+	**		5) No path can have 2 consecutive RED nodes.
+	**		6) Nulls are black.
+	**	- Fixing Rules :
+	**		1) If aunt is BLACK : rotate -> Parent = BLACK, Children = RED.
+	**		2) If aunt is RED : color flip -> Parent = RED Children = BLACK.
+	*/
+
 	template < class T, class Compare = std::less<typename T::first>,
 		class Alloc = std::allocator<T> >
 		class rb_tree
@@ -106,6 +105,7 @@ namespace ft
 					_tnull->left = NULL;
 					_tnull->right = NULL;
 					_tnull->color = BLACK;
+					_alloc.construct(&_tnull->data, value_type());
 					_root = _tnull;
 					_size = 0;
 				}
@@ -118,6 +118,7 @@ namespace ft
 					_tnull->left = NULL;
 					_tnull->right = NULL;
 					_tnull->color = BLACK;
+					_alloc.construct(&_tnull->data, value_type());
 					_size = cpy._size;
 					copy(_tnull, _root, cpy._root, cpy._tnull);
 				}
@@ -153,7 +154,6 @@ namespace ft
 						return tmp;
 					node_pointer node = _node_alloc.allocate(1);
 					node->color = RED;
-					//node->data = newMapEntry;
 					_alloc.construct(&(node->data), newMapEntry);
 					node->left = _tnull;
 					node->right = _tnull;
@@ -270,16 +270,6 @@ namespace ft
 				size_type size(void) const { return _size; }
 				size_type max_size(void) const { return _node_alloc.max_size(); }
 
-				void printNode(node_pointer node, const char *char_str) const
-				{
-					std::string str(char_str);
-					std::cout << str << "(" << node << ") = ";
-					if (node && node != _tnull)
-						std::cout << node->data.first << " - " << node->data.second << std::endl;
-					else
-						std::cout << "NIL" << std::endl;
-				}
-
 			private:
 
 				node_pointer	copy(node_pointer& parent, node_pointer& node,
@@ -288,7 +278,6 @@ namespace ft
 					if (src && src != cpy_tnull)
 					{
 						node = _node_alloc.allocate(1);
-						//node->data = src->data;
 						_alloc.construct(&(node->data), src->data);
 						node->color = src->color;
 						node->parent = parent;
@@ -630,38 +619,6 @@ namespace ft
 						return (find(key, node->right));
 					else
 						return node;
-				}
-
-			public:
-				void print(node_pointer node, int space) const
-				{
-					// Base case
-					if (node == _tnull)
-						return;
-
-					// Increase distance between levels
-					space += 10;
-
-					// Process right child first
-					print(node->right, space);
-
-					// Print current node after space
-					// count
-					std::cout << std::endl;
-					for (int i = 10; i < space; i++)
-						std::cout << " ";
-					if (node->isBlack())
-						std::cout << "\033[1;34m" << node->data.first << "\033[0m\n";
-					else
-						std::cout << "\033[1;31m" << node->data.first << "\033[0m\n";
-
-					// Process left child
-					print(node->left, space);
-				}
-
-				void print(void) const
-				{
-					print(_root, 0);
 				}
 		};
 

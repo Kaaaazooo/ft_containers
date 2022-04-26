@@ -5,8 +5,8 @@
 
 namespace ft
 {
-	template <class T>
-		class vector_iterator : public ft::iterator<std::random_access_iterator_tag, T>
+	template <typename T>
+		class vector_iterator : public ft::iterator<ft::random_access_iterator_tag, T>
 	{
 		public:
 			typedef typename ft::iterator<ft::random_access_iterator_tag, T>::value_type		value_type;
@@ -31,9 +31,14 @@ namespace ft
 				return (*this);
 			}
 
+			operator vector_iterator<const T> () const
+			{
+				return (this->_current);
+			}
+
 			reference	operator*() const {return (*_current);}
 
-			pointer		operator->()
+			pointer		operator->() const
 			{
 				return (&(this->operator*()));
 			}
@@ -89,11 +94,6 @@ namespace ft
 			reference	operator[](difference_type n) const
 			{
 				return (*(_current + n));
-			}
-
-			operator vector_iterator<const T> () const
-			{
-				return (vector_iterator<const T>(this->_current));
 			}
 
 			friend bool operator==(const vector_iterator<T> &it1, const vector_iterator<T> &it2)
@@ -174,7 +174,7 @@ namespace ft
 
 	template <class T>
 		vector_iterator<T>
-		operator+(int lhs, const vector_iterator<T> rhs)
+		operator+(typename vector_iterator<T>::difference_type lhs, const vector_iterator<T> rhs)
 		{
 			return lhs + rhs.base();
 		}
